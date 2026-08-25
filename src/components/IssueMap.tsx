@@ -4,12 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Map, Marker, Popup } from "react-map-gl/mapbox";
 import type { Issue } from "@/types/issue";
+import { useColorScheme } from "@/lib/useColorScheme";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const NYC_CENTER = { latitude: 40.7128, longitude: -74.006, zoom: 11 };
 
 export function IssueMap({ issues }: { issues: Issue[] }) {
   const [selected, setSelected] = useState<Issue | null>(null);
+  const colorScheme = useColorScheme();
 
   return (
     <div className="relative h-screen w-full">
@@ -23,7 +25,11 @@ export function IssueMap({ issues }: { issues: Issue[] }) {
         mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
         initialViewState={NYC_CENTER}
         style={{ width: "100%", height: "100vh" }}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
+        mapStyle={
+          colorScheme === "dark"
+            ? "mapbox://styles/mapbox/dark-v11"
+            : "mapbox://styles/mapbox/streets-v12"
+        }
       >
         {issues.map((issue) => (
           <Marker
