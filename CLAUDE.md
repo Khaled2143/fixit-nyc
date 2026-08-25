@@ -8,13 +8,19 @@ this app aggregates that scattered activity into one place.
 
 Two ways an issue enters the system:
 1. Native submission - user creates a structured issue directly on the site
-   (optionally attaching video).
+   (optionally linking to an existing video/post).
 2. Linked submission - user pastes a TikTok/IG link; we store it as a
    reference (we do NOT re-host or download the video).
 
-Every issue has: a category, a location (pinned via address/lat-long
-geocoding), a status, and optionally a video or linked post. Issues are
-shown on a public map.
+We never host or upload video ourselves - any video attached to an issue is
+always an external link the viewer is redirected to.
+
+Every issue has: a category, a required text description, a location, and
+a status. Location can be captured as an address, a manually dropped map
+pin, or raw lat/long - all resolve down to lat/long for pinning, and we
+track which method was used (`locationSource`) for future debugging. A
+photo and/or a video/post link are both optional bonus evidence. Issues
+are shown on a public map.
 
 ### Status model (keep this simple - do not over-build)
 - Only two states exist right now: `submitted` and `resolved`.
@@ -46,7 +52,8 @@ Testing: not yet set up. When we add tests, use Vitest (project convention - do 
 
 - Database: Supabase (Postgres), free tier. Stores issues (category,
   location, status, video/link references).
-- Video storage (native submissions): Supabase Storage.
+- Video: never stored/hosted by us - always an external link (TikTok/IG,
+  etc.) that redirects out. No Supabase Storage usage for video.
 - Auth (future - not needed yet): Supabase Auth, if/when an
   admin-facing surface is built. Do not add auth now.
 - Geocoding: not yet chosen - Mapbox Geocoding API is the plan
