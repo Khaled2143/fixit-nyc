@@ -22,31 +22,33 @@ export function LocationPicker({
   const colorScheme = useColorScheme();
 
   return (
-    <div className="overflow-hidden rounded border border-rule">
-      <Map
-        mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-        initialViewState={NYC_CENTER}
-        maxBounds={NYC_BOUNDS}
-        minZoom={10}
-        maxZoom={18}
-        style={{ width: "100%", height: "min(60vh, 500px)" }}
-        mapStyle={
-          colorScheme === "dark"
-            ? "mapbox://styles/mapbox/dark-v11"
-            : "mapbox://styles/mapbox/light-v11"
-        }
-        onClick={(e) => onPick(e.lngLat.lat, e.lngLat.lng)}
-      >
-        {latitude !== null && longitude !== null && (
-          <Marker
-            latitude={latitude}
-            longitude={longitude}
-            draggable
-            color="#c2410c"
-            onDragEnd={(e) => onPick(e.lngLat.lat, e.lngLat.lng)}
-          />
-        )}
-      </Map>
+    <div className="overflow-hidden rounded border border-rule bg-paper dark:bg-slate" style={{ minHeight: "min(60vh, 500px)" }}>
+      {colorScheme && (
+        <Map
+          mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
+          initialViewState={NYC_CENTER}
+          maxBounds={NYC_BOUNDS}
+          minZoom={10}
+          maxZoom={18}
+          style={{ width: "100%", height: "min(60vh, 500px)" }}
+          mapStyle={
+            colorScheme === "dark"
+              ? "mapbox://styles/mapbox/dark-v11"
+              : "mapbox://styles/mapbox/light-v11"
+          }
+          onClick={(e) => onPick(e.lngLat.lat, e.lngLat.lng)}
+        >
+          {latitude !== null && longitude !== null && (
+            <Marker
+              latitude={latitude}
+              longitude={longitude}
+              draggable
+              color="#c2410c"
+              onDragEnd={(e) => onPick(e.lngLat.lat, e.lngLat.lng)}
+            />
+          )}
+        </Map>
+      )}
     </div>
   );
 }
