@@ -52,6 +52,7 @@ export interface CreateIssueInput {
   address: string | null;
   locationSource: LocationSource;
   videoLink: string | null;
+  photoUrl: string | null;
 }
 
 export async function createIssue(input: CreateIssueInput): Promise<Issue> {
@@ -65,6 +66,7 @@ export async function createIssue(input: CreateIssueInput): Promise<Issue> {
       address: input.address,
       location_source: input.locationSource,
       video_link: input.videoLink,
+      photo_url: input.photoUrl,
     })
     .select()
     .single();

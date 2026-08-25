@@ -30,6 +30,7 @@ export function IssueMap({ issues }: { issues: Issue[] }) {
             ? "mapbox://styles/mapbox/dark-v11"
             : "mapbox://styles/mapbox/streets-v12"
         }
+        onClick={() => setSelected(null)}
       >
         {issues.map((issue) => (
           <Marker
@@ -50,9 +51,18 @@ export function IssueMap({ issues }: { issues: Issue[] }) {
             onClose={() => setSelected(null)}
             closeOnClick={false}
             anchor="bottom"
+            maxWidth="320px"
           >
-            <p className="font-medium">{selected.category}</p>
-            <p className="text-sm text-zinc-600">{selected.description}</p>
+            <p className="text-lg font-semibold">{selected.category}</p>
+            <p className="text-base text-zinc-600">{selected.description}</p>
+            {selected.photoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, not worth next/image config for a popup thumbnail
+              <img
+                src={selected.photoUrl}
+                alt="Photo of the issue"
+                className="mt-2 max-h-64 w-full rounded object-cover"
+              />
+            )}
           </Popup>
         )}
       </Map>

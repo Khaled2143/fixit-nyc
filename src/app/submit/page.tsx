@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES, type IssueCategory, type LocationSource } from "@/types/issue";
 import { geocodeAddress } from "@/lib/geocoding";
 import { isSupportedVideoLink } from "@/lib/linkParsing";
+import { uploadPhoto } from "@/lib/storage";
 import { LocationPicker } from "@/components/LocationPicker";
 
 const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
@@ -12,6 +13,9 @@ const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
   { value: "manual_pin", label: "Drop a pin" },
   { value: "latlong", label: "Lat/Long" },
 ];
+
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 const fieldClass =
   "rounded border border-zinc-300 px-3 py-3 text-base dark:border-zinc-700 dark:bg-black";
@@ -26,8 +30,32 @@ export default function SubmitIssue() {
   const [latInput, setLatInput] = useState("");
   const [lngInput, setLngInput] = useState("");
   const [videoLink, setVideoLink] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) {
+      setPhoto(null);
+      return;
+    }
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      setError("Photo must be a JPEG, PNG, WebP, or HEIC image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError("Photo must be under 5MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setError(null);
+    setPhoto(file);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -83,6 +111,17 @@ export default function SubmitIssue() {
       return;
     }
 
+    let photoUrl: string | null = null;
+    if (photo) {
+      try {
+        photoUrl = await uploadPhoto(photo);
+      } catch {
+        setError("Failed to upload photo. Try again.");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const response = await fetch("/api/issues", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,6 +133,7 @@ export default function SubmitIssue() {
         address: resolvedAddress,
         locationSource,
         videoLink: videoLink.trim() || null,
+        photoUrl,
       }),
     });
 
@@ -199,6 +239,17 @@ export default function SubmitIssue() {
             </div>
           )}
         </div>
+
+        <label className="flex flex-col gap-1.5">
+          Photo (optional)
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className={fieldClass}
+          />
+        </label>
 
         <label className="flex flex-col gap-1.5">
           Video link (optional)

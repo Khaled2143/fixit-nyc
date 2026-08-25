@@ -5,7 +5,7 @@ import { ISSUE_CATEGORIES, LOCATION_SOURCES } from "@/types/issue";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { category, description, latitude, longitude, address, locationSource, videoLink } = body;
+  const { category, description, latitude, longitude, address, locationSource, videoLink, photoUrl } = body;
 
   if (!ISSUE_CATEGORIES.includes(category)) {
     return NextResponse.json({ error: "Invalid category" }, { status: 400 });
@@ -41,6 +41,10 @@ export async function POST(request: Request) {
     }
   }
 
+  if (photoUrl !== undefined && photoUrl !== null && typeof photoUrl !== "string") {
+    return NextResponse.json({ error: "Invalid photoUrl" }, { status: 400 });
+  }
+
   try {
     const issue = await createIssue({
       category,
@@ -50,6 +54,7 @@ export async function POST(request: Request) {
       address: address ?? null,
       locationSource,
       videoLink: videoLink ?? null,
+      photoUrl: photoUrl ?? null,
     });
 
     return NextResponse.json(issue, { status: 201 });
