@@ -1,10 +1,22 @@
 export type IssueStatus = "submitted" | "resolved";
 
-export type LocationSource = "address" | "manual_pin" | "latlong";
+export const LOCATION_SOURCES = ["address", "manual_pin", "latlong"] as const;
+export type LocationSource = (typeof LOCATION_SOURCES)[number];
+
+export const ISSUE_CATEGORIES = [
+  "Pothole",
+  "Broken streetlight",
+  "Illegal dumping",
+  "Graffiti",
+  "Damaged sidewalk",
+  "Downed tree/branch",
+  "Other",
+] as const;
+export type IssueCategory = (typeof ISSUE_CATEGORIES)[number];
 
 export interface Issue {
   id: string;
-  category: string;
+  category: IssueCategory;
   description: string;
   latitude: number;
   longitude: number;

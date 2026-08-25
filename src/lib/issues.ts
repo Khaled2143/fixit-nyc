@@ -1,9 +1,9 @@
 import { supabase } from "./supabase";
-import type { Issue, IssueStatus, LocationSource } from "@/types/issue";
+import type { Issue, IssueCategory, IssueStatus, LocationSource } from "@/types/issue";
 
 interface IssueRow {
   id: string;
-  category: string;
+  category: IssueCategory;
   description: string;
   latitude: number;
   longitude: number;
@@ -42,4 +42,34 @@ export async function getIssues(): Promise<Issue[]> {
   if (error) throw error;
 
   return (data as IssueRow[]).map(mapRow);
+}
+
+export interface CreateIssueInput {
+  category: IssueCategory;
+  description: string;
+  latitude: number;
+  longitude: number;
+  address: string | null;
+  locationSource: LocationSource;
+  videoLink: string | null;
+}
+
+export async function createIssue(input: CreateIssueInput): Promise<Issue> {
+  const { data, error } = await supabase
+    .from("issues")
+    .insert({
+      category: input.category,
+      description: input.description,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      address: input.address,
+      location_source: input.locationSource,
+      video_link: input.videoLink,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return mapRow(data as IssueRow);
 }
