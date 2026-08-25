@@ -2,14 +2,25 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ISSUE_CATEGORIES, type IssueCategory } from "@/types/issue";
+import { ISSUE_CATEGORIES, LOCATION_SOURCES, type IssueCategory, type LocationSource } from "@/types/issue";
 import { geocodeAddress } from "@/lib/geocoding";
+import { LocationPicker } from "@/components/LocationPicker";
+
+const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
+  { value: "address", label: "Address" },
+  { value: "manual_pin", label: "Drop a pin" },
+];
+
+const fieldClass =
+  "rounded border border-zinc-300 px-3 py-3 text-base dark:border-zinc-700 dark:bg-black";
 
 export default function SubmitIssue() {
   const router = useRouter();
   const [category, setCategory] = useState<IssueCategory>(ISSUE_CATEGORIES[0]);
   const [description, setDescription] = useState("");
+  const [locationSource, setLocationSource] = useState<LocationSource>(LOCATION_SOURCES[0]);
   const [address, setAddress] = useState("");
+  const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [videoLink, setVideoLink] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -17,11 +28,30 @@ export default function SubmitIssue() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
 
-    const location = await geocodeAddress(address);
+    let location: { latitude: number; longitude: number } | null = null;
+    let resolvedAddress: string | null = null;
+
+    if (locationSource === "address") {
+      setSubmitting(true);
+      location = await geocodeAddress(address);
+      if (!location) {
+        setError("Couldn't find that address. Try being more specific.");
+        setSubmitting(false);
+        return;
+      }
+      resolvedAddress = address;
+    } else if (locationSource === "manual_pin") {
+      if (!pin) {
+        setError("Tap the map to drop a pin at the issue's location.");
+        return;
+      }
+      location = pin;
+      setSubmitting(true);
+    }
+
     if (!location) {
-      setError("Couldn't find that address. Try being more specific.");
+      setError("Location is required.");
       setSubmitting(false);
       return;
     }
@@ -34,8 +64,8 @@ export default function SubmitIssue() {
         description,
         latitude: location.latitude,
         longitude: location.longitude,
-        address,
-        locationSource: "address",
+        address: resolvedAddress,
+        locationSource,
         videoLink: videoLink || null,
       }),
     });
@@ -51,15 +81,15 @@ export default function SubmitIssue() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-12">
+    <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
       <h1 className="text-2xl font-semibold">Report an issue</h1>
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
+      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
+        <label className="flex flex-col gap-1.5">
           Category
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as IssueCategory)}
-            className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-black"
+            className={fieldClass}
           >
             {ISSUE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -69,37 +99,65 @@ export default function SubmitIssue() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1">
+        <label className="flex flex-col gap-1.5">
           Description
           <textarea
             required
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-black"
+            className={fieldClass}
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          Address
-          <input
-            required
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="e.g. 5th Ave & W 34th St, New York, NY"
-            className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-black"
-          />
-        </label>
+        <div className="flex flex-col gap-2">
+          <span>Location</span>
+          <div className="flex gap-2">
+            {LOCATION_METHODS.map((method) => (
+              <button
+                key={method.value}
+                type="button"
+                aria-pressed={locationSource === method.value}
+                onClick={() => setLocationSource(method.value)}
+                className={`flex-1 rounded border px-3 py-3 text-base ${
+                  locationSource === method.value
+                    ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                    : "border-zinc-300 dark:border-zinc-700"
+                }`}
+              >
+                {method.label}
+              </button>
+            ))}
+          </div>
 
-        <label className="flex flex-col gap-1">
+          {locationSource === "address" && (
+            <input
+              required
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="e.g. 5th Ave & W 34th St, New York, NY"
+              className={fieldClass}
+            />
+          )}
+
+          {locationSource === "manual_pin" && (
+            <LocationPicker
+              latitude={pin?.latitude ?? null}
+              longitude={pin?.longitude ?? null}
+              onPick={(latitude, longitude) => setPin({ latitude, longitude })}
+            />
+          )}
+        </div>
+
+        <label className="flex flex-col gap-1.5">
           Video link (optional)
           <input
             type="url"
             value={videoLink}
             onChange={(e) => setVideoLink(e.target.value)}
             placeholder="https://tiktok.com/..."
-            className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-black"
+            className={fieldClass}
           />
         </label>
 
@@ -108,7 +166,7 @@ export default function SubmitIssue() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="w-full rounded bg-black px-4 py-3.5 text-base font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
         >
           {submitting ? "Submitting..." : "Submit"}
         </button>

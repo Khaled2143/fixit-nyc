@@ -15,7 +15,7 @@ export function IssueMap({ issues }: { issues: Issue[] }) {
     <div className="relative h-screen w-full">
       <Link
         href="/submit"
-        className="absolute top-4 right-4 z-10 rounded bg-black px-4 py-2 text-white shadow dark:bg-white dark:text-black"
+        className="absolute top-4 right-4 z-10 rounded bg-black px-4 py-3 text-base font-medium text-white shadow dark:bg-white dark:text-black"
       >
         Report an issue
       </Link>
