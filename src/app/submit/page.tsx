@@ -9,6 +9,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
   { value: "address", label: "Address" },
   { value: "manual_pin", label: "Drop a pin" },
+  { value: "latlong", label: "Lat/Long" },
 ];
 
 const fieldClass =
@@ -21,6 +22,8 @@ export default function SubmitIssue() {
   const [locationSource, setLocationSource] = useState<LocationSource>(LOCATION_SOURCES[0]);
   const [address, setAddress] = useState("");
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [latInput, setLatInput] = useState("");
+  const [lngInput, setLngInput] = useState("");
   const [videoLink, setVideoLink] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +50,24 @@ export default function SubmitIssue() {
         return;
       }
       location = pin;
+      setSubmitting(true);
+    } else if (locationSource === "latlong") {
+      const latitude = Number(latInput);
+      const longitude = Number(lngInput);
+      if (
+        latInput.trim() === "" ||
+        lngInput.trim() === "" ||
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        setError("Enter a valid latitude (-90 to 90) and longitude (-180 to 180).");
+        return;
+      }
+      location = { latitude, longitude };
       setSubmitting(true);
     }
 
@@ -147,6 +168,29 @@ export default function SubmitIssue() {
               longitude={pin?.longitude ?? null}
               onPick={(latitude, longitude) => setPin({ latitude, longitude })}
             />
+          )}
+
+          {locationSource === "latlong" && (
+            <div className="flex gap-2">
+              <input
+                required
+                type="text"
+                inputMode="decimal"
+                value={latInput}
+                onChange={(e) => setLatInput(e.target.value)}
+                placeholder="Latitude"
+                className={`${fieldClass} w-1/2`}
+              />
+              <input
+                required
+                type="text"
+                inputMode="decimal"
+                value={lngInput}
+                onChange={(e) => setLngInput(e.target.value)}
+                placeholder="Longitude"
+                className={`${fieldClass} w-1/2`}
+              />
+            </div>
           )}
         </div>
 
