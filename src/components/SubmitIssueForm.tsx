@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES, type IssueCategory, type LocationSource } from "@/types/issue";
 import { geocodeAddress } from "@/lib/geocoding";
 import { isSupportedVideoLink } from "@/lib/linkParsing";
 import { uploadPhoto } from "@/lib/storage";
+import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { LocationPicker } from "@/components/LocationPicker";
 
 const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
@@ -18,10 +18,9 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 const fieldClass =
-  "rounded border border-zinc-300 px-3 py-3 text-base dark:border-zinc-700 dark:bg-black";
+  "rounded border border-rule px-3 py-3 text-base text-ink dark:border-zinc-700 dark:bg-black dark:text-white";
 
-export default function SubmitIssue() {
-  const router = useRouter();
+export function SubmitIssueForm({ onSuccess }: { onSuccess: () => void }) {
   const [category, setCategory] = useState<IssueCategory>(ISSUE_CATEGORIES[0]);
   const [description, setDescription] = useState("");
   const [locationSource, setLocationSource] = useState<LocationSource>(LOCATION_SOURCES[0]);
@@ -144,41 +143,62 @@ export default function SubmitIssue() {
       return;
     }
 
-    router.push("/");
+    onSuccess();
   }
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
-      <h1 className="text-2xl font-semibold">Report an issue</h1>
+    <div className="px-6 py-6 sm:px-7 sm:py-7">
+      <h1 className="text-2xl font-extrabold tracking-tight text-ink dark:text-white">
+        Report an issue
+      </h1>
+      <p className="mt-1 font-mono text-xs tracking-wide text-zinc-500 uppercase">
+        No account needed · posts publicly
+      </p>
+
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
-        <label className="flex flex-col gap-1.5">
-          Category
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as IssueCategory)}
-            className={fieldClass}
-          >
-            {ISSUE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-semibold text-ink dark:text-white">What is it?</span>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {ISSUE_CATEGORIES.map((c) => {
+              const Icon = CATEGORY_STYLES[c].icon;
+              const isSelected = category === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setCategory(c)}
+                  className={`flex min-h-[66px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-xs font-medium ${
+                    isSelected
+                      ? "border-civic bg-civic/10 text-civic"
+                      : "border-rule text-ink dark:border-zinc-700 dark:text-white"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={1.9} />
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <label className="flex flex-col gap-1.5">
-          Description
+          <span className="text-sm font-semibold text-ink dark:text-white">
+            What&apos;s going on?
+          </span>
           <textarea
             required
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
+            maxLength={500}
+            placeholder="Be specific — neighbors read this"
             className={fieldClass}
           />
         </label>
 
         <div className="flex flex-col gap-2">
-          <span>Location</span>
+          <span className="text-sm font-semibold text-ink dark:text-white">Where is it?</span>
           <div className="flex gap-2">
             {LOCATION_METHODS.map((method) => (
               <button
@@ -188,8 +208,8 @@ export default function SubmitIssue() {
                 onClick={() => setLocationSource(method.value)}
                 className={`flex-1 rounded border px-3 py-3 text-base ${
                   locationSource === method.value
-                    ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-zinc-300 dark:border-zinc-700"
+                    ? "border-civic bg-civic text-white"
+                    : "border-rule text-ink dark:border-zinc-700 dark:text-white"
                 }`}
               >
                 {method.label}
@@ -240,38 +260,49 @@ export default function SubmitIssue() {
           )}
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          Photo (optional)
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handlePhotoChange}
-            className={fieldClass}
-          />
-        </label>
+        <div className="flex flex-col gap-2 rounded-xl border border-dashed border-rule p-3 dark:border-zinc-700">
+          <span className="font-mono text-xs tracking-wide text-zinc-500 uppercase">
+            Add proof (optional)
+          </span>
 
-        <label className="flex flex-col gap-1.5">
-          Video link (optional)
-          <input
-            type="url"
-            value={videoLink}
-            onChange={(e) => setVideoLink(e.target.value)}
-            placeholder="https://tiktok.com/..."
-            className={fieldClass}
-          />
-        </label>
+          <label className="flex flex-col gap-1.5">
+            Photo
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoChange}
+              className={fieldClass}
+            />
+          </label>
 
-        {error && <p className="text-red-600">{error}</p>}
+          <label className="flex flex-col gap-1.5">
+            TikTok / IG link
+            <input
+              type="url"
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+              placeholder="https://tiktok.com/..."
+              className={fieldClass}
+            />
+          </label>
+        </div>
+
+        {error && <p className="text-sm text-signal">{error}</p>}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded bg-black px-4 py-3.5 text-base font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="w-full rounded-full bg-signal px-4 py-3.5 text-base font-semibold text-white disabled:opacity-50"
         >
-          {submitting ? "Submitting..." : "Submit"}
+          {submitting ? "Posting..." : "Post to the board"}
         </button>
+
+        <p className="text-xs text-zinc-500">
+          Goes up right away. Skip names, plates, or anything you wouldn&apos;t put on a bulletin
+          board.
+        </p>
       </form>
-    </main>
+    </div>
   );
 }

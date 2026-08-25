@@ -1,8 +1,8 @@
 import { getIssues } from "@/lib/issues";
-import { IssueMap } from "@/components/IssueMap";
+import { HomeView } from "@/components/HomeView";
 
 export default async function Home() {
   const issues = await getIssues();
 
-  return <IssueMap issues={issues} />;
+  return <HomeView issues={issues} />;
 }
