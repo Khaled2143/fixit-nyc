@@ -33,3 +33,24 @@ shown on a public map.
 - `npm run build` - production build check
 
 Testing: not yet set up. When we add tests, use Vitest (project convention - do not introduce Jest).
+
+## Architecture
+
+- `src/app/` - routes (App Router). API routes live in `src/app/api/`.
+- `src/components/` - reusable UI components.
+- `src/lib/` - non-UI logic: Supabase client setup, geocoding calls,
+  TikTok/IG link parsing.
+- `src/types/` - shared TypeScript types (e.g. the Issue type).
+
+## Data & services
+
+- Database: Supabase (Postgres), free tier. Stores issues (category,
+  location, status, video/link references).
+- Video storage (native submissions): Supabase Storage.
+- Auth (future - not needed yet): Supabase Auth, if/when an
+  admin-facing surface is built. Do not add auth now.
+- Geocoding: not yet chosen - Mapbox Geocoding API is the plan
+  (see earlier decision), not yet installed.
+- Do not add Prisma or another ORM - use the Supabase client
+  (`@supabase/supabase-js`) directly unless we explicitly decide
+  otherwise.
