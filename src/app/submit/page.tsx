@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES, type IssueCategory, type LocationSource } from "@/types/issue";
 import { geocodeAddress } from "@/lib/geocoding";
+import { isSupportedVideoLink } from "@/lib/linkParsing";
 import { LocationPicker } from "@/components/LocationPicker";
 
 const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
@@ -31,6 +32,11 @@ export default function SubmitIssue() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (videoLink.trim() !== "" && !isSupportedVideoLink(videoLink.trim())) {
+      setError("Video link must be a TikTok or Instagram URL.");
+      return;
+    }
 
     let location: { latitude: number; longitude: number } | null = null;
     let resolvedAddress: string | null = null;
@@ -87,7 +93,7 @@ export default function SubmitIssue() {
         longitude: location.longitude,
         address: resolvedAddress,
         locationSource,
-        videoLink: videoLink || null,
+        videoLink: videoLink.trim() || null,
       }),
     });
 

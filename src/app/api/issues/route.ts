@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createIssue } from "@/lib/issues";
+import { isSupportedVideoLink } from "@/lib/linkParsing";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES } from "@/types/issue";
 
 export async function POST(request: Request) {
@@ -31,8 +32,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid address" }, { status: 400 });
   }
 
-  if (videoLink !== undefined && videoLink !== null && typeof videoLink !== "string") {
-    return NextResponse.json({ error: "Invalid videoLink" }, { status: 400 });
+  if (videoLink !== undefined && videoLink !== null) {
+    if (typeof videoLink !== "string" || !isSupportedVideoLink(videoLink)) {
+      return NextResponse.json(
+        { error: "Video link must be a TikTok or Instagram URL" },
+        { status: 400 },
+      );
+    }
   }
 
   try {
