@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Map, Marker, Popup } from "react-map-gl/mapbox";
+import { X } from "lucide-react";
 import type { Issue } from "@/types/issue";
 import { CATEGORY_STYLES, categoryColor } from "@/lib/categoryStyles";
 import { useColorScheme } from "@/lib/useColorScheme";
@@ -21,7 +22,19 @@ export function IssueMap({
   onReportIssue: () => void;
 }) {
   const [selected, setSelected] = useState<Issue | null>(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (!lightboxPhoto) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setLightboxPhoto(null);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxPhoto]);
 
   return (
     <div className="relative h-screen w-full bg-paper dark:bg-slate">
@@ -93,12 +106,22 @@ export function IssueMap({
                   <p className="mt-1 font-mono text-xs text-zinc-500">{selected.address}</p>
                 )}
                 {selected.photoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, not worth next/image config for a popup thumbnail
-                  <img
-                    src={selected.photoUrl}
-                    alt="Photo of the issue"
-                    className="mt-2 max-h-56 w-full rounded object-contain"
-                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxPhoto(selected.photoUrl);
+                    }}
+                    className="mt-2 block w-full cursor-zoom-in"
+                    aria-label="View full-size photo"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, not worth next/image config for a popup thumbnail */}
+                    <img
+                      src={selected.photoUrl}
+                      alt="Photo of the issue"
+                      className="max-h-56 w-full rounded object-contain"
+                    />
+                  </button>
                 )}
                 {selected.videoLink && (
                   <a
@@ -114,6 +137,29 @@ export function IssueMap({
             </Popup>
           )}
         </Map>
+      )}
+
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxPhoto(null)}
+            aria-label="Close"
+            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL */}
+          <img
+            src={lightboxPhoto}
+            alt="Full-size photo of the issue"
+            className="max-h-full max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );
