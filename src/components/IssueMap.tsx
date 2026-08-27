@@ -77,9 +77,10 @@ export function IssueMap({
       <button
         type="button"
         onClick={onReportIssue}
-        className="absolute top-4 right-4 z-10 rounded-full bg-signal px-5 py-3 text-base font-semibold text-white shadow-lg"
+        className="absolute top-4 right-4 z-10 rounded-full bg-signal px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:px-5 sm:py-3 sm:text-base"
       >
-        + Report an issue
+        <span className="sm:hidden">+ Report</span>
+        <span className="hidden sm:inline">+ Report an issue</span>
       </button>
 
       {colorScheme && (
