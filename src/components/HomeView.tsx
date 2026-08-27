@@ -34,12 +34,15 @@ export function HomeView({ issues }: { issues: Issue[] }) {
     [issues, activeCategory],
   );
 
+  // Anchored on the popup (only ever set by an explicit pin/card tap), never on
+  // the scroll-driven active id — otherwise scrolling would re-sort the list
+  // out from under the user's own scroll position.
   const orderedIssues = useMemo(() => {
-    if (!activeIssueId) return filteredIssues;
-    const anchor = filteredIssues.find((issue) => issue.id === activeIssueId);
+    if (!popupIssueId) return filteredIssues;
+    const anchor = filteredIssues.find((issue) => issue.id === popupIssueId);
     if (!anchor) return filteredIssues;
     return sortByDistanceFrom(filteredIssues, anchor);
-  }, [filteredIssues, activeIssueId]);
+  }, [filteredIssues, popupIssueId]);
 
   function handleIssueSelect(id: string) {
     setActiveIssueId(id);

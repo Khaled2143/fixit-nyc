@@ -51,8 +51,19 @@ export function IssueList({
     const root = scrollRef.current;
     if (!root) return;
 
+    // `observe()` queues an initial notification for every newly-observed
+    // target, so the first batch arrives without the user having scrolled at
+    // all. Swallow that batch: reporting it as active would pan the map off
+    // NYC on load (and again whenever this effect re-observes).
+    let hasSeenInitialBatch = false;
+
     const observer = new IntersectionObserver(
       (entries) => {
+        if (!hasSeenInitialBatch) {
+          hasSeenInitialBatch = true;
+          return;
+        }
+
         if (isProgrammaticScroll.current) return;
 
         const visible = entries.filter((entry) => entry.isIntersecting);
