@@ -1,9 +1,33 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { createIssue } from "@/lib/issues";
 import { isSupportedVideoLink } from "@/lib/linkParsing";
+import { containsProfanity } from "@/lib/profanityFilter";
+import { getProfile } from "@/lib/profiles";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES } from "@/types/issue";
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims;
+
+  if (!user) {
+    return NextResponse.json({ error: "You must be signed in to post." }, { status: 401 });
+  }
+
+  const profile = await getProfile(user.sub);
+
+  if (profile?.bannedAt) {
+    return NextResponse.json(
+      { error: "Your account has been suspended for repeated community guideline violations." },
+      { status: 403 },
+    );
+  }
+
+  if (!profile?.username) {
+    return NextResponse.json({ error: "Set a username before posting." }, { status: 403 });
+  }
+
   const body = await request.json();
   const { category, description, latitude, longitude, address, locationSource, videoLink, photoUrl } = body;
 
@@ -13,6 +37,13 @@ export async function POST(request: Request) {
 
   if (typeof description !== "string" || description.trim().length === 0) {
     return NextResponse.json({ error: "Description is required" }, { status: 400 });
+  }
+
+  if (containsProfanity(description)) {
+    return NextResponse.json(
+      { error: "Your description contains language that isn't allowed. Please revise it." },
+      { status: 400 },
+    );
   }
 
   if (
@@ -55,6 +86,7 @@ export async function POST(request: Request) {
       locationSource,
       videoLink: videoLink ?? null,
       photoUrl: photoUrl ?? null,
+      userId: user.sub,
     });
 
     return NextResponse.json(issue, { status: 201 });
