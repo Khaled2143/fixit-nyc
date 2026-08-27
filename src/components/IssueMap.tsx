@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Map, Marker, Popup } from "react-map-gl/mapbox";
+import { Map, Marker, Popup, type MapRef } from "react-map-gl/mapbox";
 import { X } from "lucide-react";
 import type { Issue } from "@/types/issue";
 import { CATEGORY_STYLES, categoryColor } from "@/lib/categoryStyles";
@@ -18,20 +18,30 @@ const NYC_BOUNDS: [[number, number], [number, number]] = [
 export function IssueMap({
   issues,
   user,
+  activeIssueId,
+  popupIssueId,
+  onPinClick,
+  onPopupClose,
   onReportIssue,
   onIssueChanged,
 }: {
   issues: Issue[];
   user: User | null;
+  activeIssueId: string | null;
+  popupIssueId: string | null;
+  onPinClick: (id: string) => void;
+  onPopupClose: () => void;
   onReportIssue: () => void;
   onIssueChanged: () => void;
 }) {
-  const [selected, setSelected] = useState<Issue | null>(null);
+  const mapRef = useRef<MapRef>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const colorScheme = useColorScheme();
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
+
+  const popupIssue = issues.find((issue) => issue.id === popupIssueId) ?? null;
 
   async function handleReport(issueId: string) {
     setActionError(null);
@@ -57,7 +67,7 @@ export function IssueMap({
       return;
     }
 
-    setSelected(null);
+    onPopupClose();
     onIssueChanged();
   }
 
@@ -72,12 +82,19 @@ export function IssueMap({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxPhoto]);
 
+  useEffect(() => {
+    if (!activeIssueId) return;
+    const issue = issues.find((i) => i.id === activeIssueId);
+    if (!issue) return;
+    mapRef.current?.flyTo({ center: [issue.longitude, issue.latitude], duration: 600 });
+  }, [activeIssueId, issues]);
+
   return (
     <div className="relative h-screen w-full bg-paper dark:bg-slate">
       <button
         type="button"
         onClick={onReportIssue}
-        className="absolute top-4 right-4 z-10 rounded-full bg-signal px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:px-5 sm:py-3 sm:text-base"
+        className="absolute top-4 right-4 z-10 rounded-full bg-signal px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:px-5 sm:py-3 sm:text-base lg:right-[25rem]"
       >
         <span className="sm:hidden">+ Report</span>
         <span className="hidden sm:inline">+ Report an issue</span>
@@ -85,6 +102,7 @@ export function IssueMap({
 
       {colorScheme && (
         <Map
+          ref={mapRef}
           mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
           initialViewState={NYC_CENTER}
           maxBounds={NYC_BOUNDS}
@@ -96,11 +114,12 @@ export function IssueMap({
               ? "mapbox://styles/mapbox/dark-v11"
               : "mapbox://styles/mapbox/light-v11"
           }
-          onClick={() => setSelected(null)}
+          onClick={onPopupClose}
         >
           {issues.map((issue) => {
             const Icon = CATEGORY_STYLES[issue.category].icon;
             const color = categoryColor(issue.category, colorScheme);
+            const isActive = issue.id === activeIssueId;
 
             return (
               <Marker
@@ -109,11 +128,15 @@ export function IssueMap({
                 longitude={issue.longitude}
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
-                  setSelected(issue);
+                  onPinClick(issue.id);
                 }}
               >
                 <div
-                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-md dark:border-slate"
+                  className={
+                    isActive
+                      ? "flex h-10 w-10 items-center justify-center rounded-full border-2 border-white shadow-lg ring-4 ring-signal/50 dark:border-slate"
+                      : "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-md dark:border-slate"
+                  }
                   style={{
                     backgroundColor: color,
                     opacity: issue.status === "resolved" ? 0.45 : 1,
@@ -125,71 +148,61 @@ export function IssueMap({
             );
           })}
 
-          {selected && (
+          {popupIssue && (
             <Popup
-              latitude={selected.latitude}
-              longitude={selected.longitude}
-              onClose={() => setSelected(null)}
+              latitude={popupIssue.latitude}
+              longitude={popupIssue.longitude}
+              onClose={onPopupClose}
               closeOnClick={false}
               anchor="bottom"
               maxWidth="380px"
             >
               <div>
                 <p className="font-mono text-xs tracking-wide text-zinc-500 uppercase">
-                  {selected.category}
+                  {popupIssue.category}
                 </p>
-                <p className="text-lg font-semibold text-ink">{selected.description}</p>
-                {selected.address && (
-                  <p className="mt-1 font-mono text-xs text-zinc-500">{selected.address}</p>
+                <p className="text-lg font-semibold text-ink">{popupIssue.description}</p>
+                {popupIssue.address && (
+                  <p className="mt-1 font-mono text-xs text-zinc-500">{popupIssue.address}</p>
                 )}
-                {selected.photoUrl && (
+                {popupIssue.photoUrl && (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setLightboxPhoto(selected.photoUrl);
+                      setLightboxPhoto(popupIssue.photoUrl);
                     }}
                     className="mt-2 block w-full cursor-zoom-in"
                     aria-label="View full-size photo"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, not worth next/image config for a popup thumbnail */}
                     <img
-                      src={selected.photoUrl}
+                      src={popupIssue.photoUrl}
                       alt="Photo of the issue"
                       className="max-h-56 w-full rounded object-contain"
                     />
                   </button>
                 )}
-                {selected.videoLink && (
-                  <a
-                    href={selected.videoLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-sm font-medium text-civic underline"
-                  >
-                    Watch the video
-                  </a>
-                )}
 
                 {actionError && <p className="mt-2 text-sm text-signal">{actionError}</p>}
 
                 <div className="mt-3 flex gap-2">
-                  {user && !reportedIds.has(selected.id) && (
+                  {user && !reportedIds.has(popupIssue.id) && (
                     <button
                       type="button"
-                      onClick={() => handleReport(selected.id)}
+                      onClick={() => handleReport(popupIssue.id)}
                       className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
                     >
                       Report
                     </button>
                   )}
-                  {reportedIds.has(selected.id) && (
+                  {reportedIds.has(popupIssue.id) && (
                     <span className="text-xs font-mono text-zinc-500">Reported</span>
                   )}
-                  {user && user.id === selected.userId && selected.status !== "resolved" && (
+                  {user && user.id === popupIssue.userId && popupIssue.status !== "resolved" && (
                     <button
                       type="button"
-                      onClick={() => handleResolve(selected.id)}
+                      onClick={() => handleResolve(popupIssue.id)}
                       className="rounded-full bg-civic px-3 py-1.5 text-xs font-semibold text-white"
                     >
                       Mark resolved
