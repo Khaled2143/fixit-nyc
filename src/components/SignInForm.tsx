@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export function SignInForm() {
@@ -32,9 +33,17 @@ export function SignInForm() {
 
   if (sent) {
     return (
-      <p className="text-sm text-ink dark:text-white">
-        Check your email for a sign-in link.
-      </p>
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-rule bg-paper px-6 py-8 text-center dark:border-zinc-700 dark:bg-black">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-civic/10 text-civic dark:bg-civic/20">
+          <Mail size={24} />
+        </div>
+        <p className="text-lg font-semibold text-ink dark:text-white">
+          Check your email for a sign-in link
+        </p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Don&apos;t see it? Check your spam or junk folder — it can take a minute to arrive.
+        </p>
+      </div>
     );
   }
 
