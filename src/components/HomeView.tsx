@@ -21,6 +21,7 @@ export function HomeView({ issues }: { issues: Issue[] }) {
   const [signInOpen, setSignInOpen] = useState(false);
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
   const [popupIssueId, setPopupIssueId] = useState<string | null>(null);
+  const [anchorIssueId, setAnchorIssueId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("All");
   const { user } = useSupabaseUser();
   const colorScheme = useColorScheme();
@@ -34,19 +35,22 @@ export function HomeView({ issues }: { issues: Issue[] }) {
     [issues, activeCategory],
   );
 
-  // Anchored on the popup (only ever set by an explicit pin/card tap), never on
+  // Anchored on its own id (only ever set by an explicit pin/card tap), never on
   // the scroll-driven active id — otherwise scrolling would re-sort the list
-  // out from under the user's own scroll position.
+  // out from under the user's own scroll position. It is deliberately kept
+  // separate from `popupIssueId` so closing the popup doesn't discard the
+  // "browsing near this issue" ordering.
   const orderedIssues = useMemo(() => {
-    if (!popupIssueId) return filteredIssues;
-    const anchor = filteredIssues.find((issue) => issue.id === popupIssueId);
+    if (!anchorIssueId) return filteredIssues;
+    const anchor = filteredIssues.find((issue) => issue.id === anchorIssueId);
     if (!anchor) return filteredIssues;
     return sortByDistanceFrom(filteredIssues, anchor);
-  }, [filteredIssues, popupIssueId]);
+  }, [filteredIssues, anchorIssueId]);
 
   function handleIssueSelect(id: string) {
     setActiveIssueId(id);
     setPopupIssueId(id);
+    setAnchorIssueId(id);
   }
 
   return (

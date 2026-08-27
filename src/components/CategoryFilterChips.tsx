@@ -14,7 +14,7 @@ export function CategoryFilterChips({
   const options: CategoryFilter[] = ["All", ...ISSUE_CATEGORIES];
 
   return (
-    <div className="flex gap-2 overflow-x-auto px-3 py-2">
+    <div className="flex flex-wrap gap-2 px-3 py-2">
       {options.map((option) => {
         const isActive = option === active;
         return (

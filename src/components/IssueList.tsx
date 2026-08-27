@@ -27,6 +27,14 @@ export function IssueList({
   const lastReportedId = useRef<string | null>(null);
   const isProgrammaticScroll = useRef(false);
 
+  // A tap re-anchors the distance sort, moving the tapped card to the top of the
+  // list. Scroll up to reveal that reordering — the effect below can't, since it
+  // bails out when the tapped card was already the active one.
+  function handleCardTap(id: string) {
+    onCardTap(id);
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   // External change (a pin or card tap) -> scroll the list to match.
   // Skipped when the change originated from our own scroll below, so we
   // don't fight the user mid-scroll.
@@ -57,8 +65,18 @@ export function IssueList({
     // NYC on load (and again whenever this effect re-observes).
     let hasSeenInitialBatch = false;
 
+    // A batch only contains the cards whose intersection state *changed*, so we
+    // keep a running record of everything currently in the band — otherwise a
+    // card entering below an already-visible one would be reported as topmost.
+    const intersecting = new Map<string, boolean>();
+
     const observer = new IntersectionObserver(
       (entries) => {
+        for (const entry of entries) {
+          const entryId = entry.target.getAttribute("data-issue-id");
+          if (entryId) intersecting.set(entryId, entry.isIntersecting);
+        }
+
         if (!hasSeenInitialBatch) {
           hasSeenInitialBatch = true;
           return;
@@ -66,13 +84,18 @@ export function IssueList({
 
         if (isProgrammaticScroll.current) return;
 
-        const visible = entries.filter((entry) => entry.isIntersecting);
-        if (visible.length === 0) return;
-
-        const topmost = visible.reduce((closest, entry) =>
-          entry.boundingClientRect.top < closest.boundingClientRect.top ? entry : closest,
-        );
-        const id = topmost.target.getAttribute("data-issue-id");
+        let id: string | null = null;
+        let topmost = Infinity;
+        for (const [candidateId, isIntersecting] of intersecting) {
+          if (!isIntersecting) continue;
+          const card = cardRefs.current.get(candidateId);
+          if (!card) continue;
+          const top = card.getBoundingClientRect().top;
+          if (top < topmost) {
+            topmost = top;
+            id = candidateId;
+          }
+        }
         if (!id) return;
 
         lastReportedId.current = id;
@@ -107,7 +130,7 @@ export function IssueList({
               issue={issue}
               isActive={issue.id === activeIssueId}
               colorScheme={colorScheme}
-              onClick={() => onCardTap(issue.id)}
+              onClick={() => handleCardTap(issue.id)}
             />
           </div>
         ))}

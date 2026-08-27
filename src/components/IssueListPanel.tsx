@@ -6,7 +6,11 @@ import type { Issue } from "@/types/issue";
 import { IssueList } from "@/components/IssueList";
 import type { CategoryFilter } from "@/components/CategoryFilterChips";
 
-const SNAP_POINTS = [0.15, 0.5, 0.92];
+// The top snap point must be exactly 1: vaul only lets an inner element handle
+// a vertical touch gesture when the sheet's own translate offset is 0, which
+// only happens at a snap point of 1. Anything less (e.g. 0.92) makes vaul drag
+// the whole sheet instead of scrolling the card list.
+const SNAP_POINTS = [0.15, 0.5, 1];
 
 export function IssueListPanel({
   isDesktop,
