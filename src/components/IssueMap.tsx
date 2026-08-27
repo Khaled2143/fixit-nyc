@@ -177,7 +177,7 @@ export function IssueMap({
                     <button
                       type="button"
                       onClick={() => handleReport(selected.id)}
-                      className="rounded-full border border-rule px-3 py-1.5 text-xs font-semibold text-ink dark:border-zinc-700 dark:text-white"
+                      className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
                     >
                       Report
                     </button>
