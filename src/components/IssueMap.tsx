@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { Map, Marker, Popup } from "react-map-gl/mapbox";
 import { X } from "lucide-react";
 import type { Issue } from "@/types/issue";
@@ -16,14 +17,49 @@ const NYC_BOUNDS: [[number, number], [number, number]] = [
 
 export function IssueMap({
   issues,
+  user,
   onReportIssue,
+  onIssueChanged,
 }: {
   issues: Issue[];
+  user: User | null;
   onReportIssue: () => void;
+  onIssueChanged: () => void;
 }) {
   const [selected, setSelected] = useState<Issue | null>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const colorScheme = useColorScheme();
+
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
+
+  async function handleReport(issueId: string) {
+    setActionError(null);
+    const response = await fetch(`/api/issues/${issueId}/report`, { method: "POST" });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setActionError(body.error ?? "Couldn't report this issue.");
+      return;
+    }
+
+    setReportedIds((prev) => new Set(prev).add(issueId));
+    onIssueChanged();
+  }
+
+  async function handleResolve(issueId: string) {
+    setActionError(null);
+    const response = await fetch(`/api/issues/${issueId}/resolve`, { method: "PATCH" });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setActionError(body.error ?? "Couldn't resolve this issue.");
+      return;
+    }
+
+    setSelected(null);
+    onIssueChanged();
+  }
 
   useEffect(() => {
     if (!lightboxPhoto) return;
@@ -133,6 +169,32 @@ export function IssueMap({
                     Watch the video
                   </a>
                 )}
+
+                {actionError && <p className="mt-2 text-sm text-signal">{actionError}</p>}
+
+                <div className="mt-3 flex gap-2">
+                  {user && !reportedIds.has(selected.id) && (
+                    <button
+                      type="button"
+                      onClick={() => handleReport(selected.id)}
+                      className="rounded-full border border-rule px-3 py-1.5 text-xs font-semibold text-ink dark:border-zinc-700 dark:text-white"
+                    >
+                      Report
+                    </button>
+                  )}
+                  {reportedIds.has(selected.id) && (
+                    <span className="text-xs font-mono text-zinc-500">Reported</span>
+                  )}
+                  {user && user.id === selected.userId && selected.status !== "resolved" && (
+                    <button
+                      type="button"
+                      onClick={() => handleResolve(selected.id)}
+                      className="rounded-full bg-civic px-3 py-1.5 text-xs font-semibold text-white"
+                    >
+                      Mark resolved
+                    </button>
+                  )}
+                </div>
               </div>
             </Popup>
           )}
