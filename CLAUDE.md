@@ -62,6 +62,17 @@ Test files live next to the code they cover (`*.test.ts`).
 - Auth: Supabase Auth, magic-link sign-in only (no password flow). Used to
   gate issue creation and reporting, and to attribute ownership - not an
   admin/official-facing surface. See Accounts & moderation below.
+- Auth emails: sent via custom SMTP (Resend) configured in the Supabase
+  dashboard (Authentication > Emails > SMTP Settings) - not in this repo.
+  Supabase's built-in email sender is capped at ~2/hour on the free tier,
+  which is unusable for real sign-ins; Resend's free tier (3,000/month) is
+  wired in instead. The Magic Link template (Authentication > Emails >
+  Templates) was edited to link to `/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink&next=/`
+  instead of the default `{{ .ConfirmationURL }}`, because `/auth/confirm`
+  expects `token_hash`/`type`, not a PKCE `code`. `nycfixit.com`'s SPF/DKIM/DMARC
+  are correctly configured for Resend, but the domain is new (registered
+  2026-08-26) - expect mail to land in spam for a while regardless of DNS
+  correctness; this resolves with sending reputation over time, not config.
 - Geocoding: Mapbox Geocoding API (`src/lib/geocoding.ts`), forward
   geocoding of a typed address to lat/long.
 - Photo moderation: Google Cloud Vision SafeSearch
