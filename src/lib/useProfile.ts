@@ -28,11 +28,16 @@ export function useProfile(user: User | null): {
       }
 
       setLoading(true);
-      const res = await fetch("/api/profile");
-      const data = res.ok ? await res.json() : null;
-      if (!ignore) {
-        setProfile(data);
-        setLoading(false);
+      try {
+        const res = await fetch("/api/profile");
+        const data = res.ok ? await res.json() : null;
+        if (!ignore) {
+          setProfile(data);
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     }
 
