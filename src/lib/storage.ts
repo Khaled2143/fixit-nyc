@@ -1,14 +1,14 @@
-import { supabase } from "./supabase";
-
-const PHOTO_BUCKET = "issue-photos";
-
 export async function uploadPhoto(file: File): Promise<string> {
-  const extension = file.name.split(".").pop();
-  const filename = `${crypto.randomUUID()}${extension ? `.${extension}` : ""}`;
+  const formData = new FormData();
+  formData.append("photo", file);
 
-  const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(filename, file);
-  if (error) throw error;
+  const response = await fetch("/api/photos", { method: "POST", body: formData });
 
-  const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(filename);
-  return data.publicUrl;
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Failed to upload photo." }));
+    throw new Error(body.error ?? "Failed to upload photo.");
+  }
+
+  const { photoUrl } = await response.json();
+  return photoUrl;
 }
