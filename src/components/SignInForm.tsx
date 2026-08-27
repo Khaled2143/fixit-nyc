@@ -17,7 +17,7 @@ export function SignInForm() {
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
     });
 
     setSubmitting(false);

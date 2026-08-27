@@ -29,7 +29,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return data ? mapProfileRow(data as ProfileRow) : null;
 }
 
-function escapeLikePattern(value: string): string {
+export function escapeLikePattern(value: string): string {
   return value.replace(/[_%]/g, (match) => `\\${match}`);
 }
 
@@ -52,6 +52,7 @@ export async function setUsername(
     if (error.code === "23505") {
       return { ok: false, error: "That username is already taken." };
     }
+    console.error("setUsername:", error);
     return { ok: false, error: "Failed to set username." };
   }
   return { ok: true };

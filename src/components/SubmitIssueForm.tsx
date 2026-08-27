@@ -125,8 +125,12 @@ export function SubmitIssueForm({
     if (photo) {
       try {
         photoUrl = await uploadPhoto(photo);
-      } catch {
-        setError("Failed to upload photo. Try again.");
+      } catch (uploadError) {
+        setError(
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Failed to upload photo. Try again.",
+        );
         setSubmitting(false);
         return;
       }

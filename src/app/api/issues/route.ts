@@ -6,6 +6,10 @@ import { containsProfanity } from "@/lib/profanityFilter";
 import { getProfile } from "@/lib/profiles";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES } from "@/types/issue";
 
+// A photo may only be attached if it came out of /api/photos, which is the
+// only path that runs SafeSearch moderation. Anything else is rejected.
+const PHOTO_URL_PREFIX = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/issue-photos/`;
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
@@ -72,8 +76,10 @@ export async function POST(request: Request) {
     }
   }
 
-  if (photoUrl !== undefined && photoUrl !== null && typeof photoUrl !== "string") {
-    return NextResponse.json({ error: "Invalid photoUrl" }, { status: 400 });
+  if (photoUrl !== undefined && photoUrl !== null) {
+    if (typeof photoUrl !== "string" || !photoUrl.startsWith(PHOTO_URL_PREFIX)) {
+      return NextResponse.json({ error: "Invalid photoUrl" }, { status: 400 });
+    }
   }
 
   try {
@@ -90,7 +96,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(issue, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("POST /api/issues:", error);
     return NextResponse.json({ error: "Failed to create issue" }, { status: 500 });
   }
 }

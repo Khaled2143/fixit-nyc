@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isPhotoSafe } from "@/lib/photoModeration";
+import { getProfile } from "@/lib/profiles";
 
 const PHOTO_BUCKET = "issue-photos";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -15,6 +16,15 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "You must be signed in to upload a photo." }, { status: 401 });
+  }
+
+  const profile = await getProfile(user.sub);
+
+  if (profile?.bannedAt) {
+    return NextResponse.json(
+      { error: "Your account has been suspended for repeated community guideline violations." },
+      { status: 403 },
+    );
   }
 
   const formData = await request.formData();
@@ -40,7 +50,8 @@ export async function POST(request: Request) {
   let safe: boolean;
   try {
     safe = await isPhotoSafe(buffer);
-  } catch {
+  } catch (moderationError) {
+    console.error("POST /api/photos: SafeSearch check failed:", moderationError);
     return NextResponse.json({ error: "Couldn't process photo, try again." }, { status: 400 });
   }
 
@@ -56,6 +67,7 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    console.error("POST /api/photos: storage upload failed:", error);
     return NextResponse.json({ error: "Failed to upload photo." }, { status: 500 });
   }
 

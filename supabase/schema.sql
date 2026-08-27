@@ -92,3 +92,24 @@ alter table reports enable row level security;
 -- with a case-insensitive unique index.
 alter table profiles drop constraint profiles_username_key;
 create unique index profiles_username_lower_idx on profiles (lower(username));
+
+-- Photo uploads now go through /api/photos (service-role key, bypasses
+-- Storage RLS). Remove any INSERT policy on the issue-photos bucket that
+-- still allows anon/authenticated clients to upload directly — this was
+-- previously only a manual dashboard action (Task 2, Step 3), which meant
+-- it was neither version-controlled nor detectable as missing.
+do $$
+declare
+  pol record;
+begin
+  for pol in
+    select policyname
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'INSERT'
+      and (qual ilike '%issue-photos%' or with_check ilike '%issue-photos%')
+  loop
+    execute format('drop policy if exists %I on storage.objects', pol.policyname);
+  end loop;
+end $$;
