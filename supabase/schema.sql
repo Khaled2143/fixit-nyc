@@ -86,3 +86,9 @@ alter table reports enable row level security;
 
 -- No policies: only the service-role key (which bypasses RLS) reads or
 -- writes this table.
+
+-- Usernames must be unique case-insensitively (e.g. "Bob" and "bob" are
+-- the same username), so replace the case-sensitive unique constraint
+-- with a case-insensitive unique index.
+alter table profiles drop constraint profiles_username_key;
+create unique index profiles_username_lower_idx on profiles (lower(username));

@@ -29,6 +29,10 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return data ? mapProfileRow(data as ProfileRow) : null;
 }
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/[_%]/g, (match) => `\\${match}`);
+}
+
 export async function setUsername(
   userId: string,
   username: string,
@@ -36,7 +40,7 @@ export async function setUsername(
   const { data: existing } = await supabaseAdmin
     .from("profiles")
     .select("id")
-    .ilike("username", username)
+    .ilike("username", escapeLikePattern(username))
     .maybeSingle();
 
   if (existing && existing.id !== userId) {
@@ -44,7 +48,12 @@ export async function setUsername(
   }
 
   const { error } = await supabaseAdmin.from("profiles").update({ username }).eq("id", userId);
-  if (error) return { ok: false, error: "Failed to set username." };
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: "That username is already taken." };
+    }
+    return { ok: false, error: "Failed to set username." };
+  }
   return { ok: true };
 }
 
