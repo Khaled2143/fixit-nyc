@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
+import type { User } from "@supabase/supabase-js";
 import { ISSUE_CATEGORIES, LOCATION_SOURCES, type IssueCategory, type LocationSource } from "@/types/issue";
 import { geocodeAddress } from "@/lib/geocoding";
 import { isSupportedVideoLink } from "@/lib/linkParsing";
 import { uploadPhoto } from "@/lib/storage";
 import { CATEGORY_STYLES } from "@/lib/categoryStyles";
 import { LocationPicker } from "@/components/LocationPicker";
+import { useProfile } from "@/lib/useProfile";
+import { SignInForm } from "@/components/SignInForm";
+import { UsernameOnboarding } from "@/components/UsernameOnboarding";
 
 const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
   { value: "address", label: "Address" },
@@ -20,7 +24,14 @@ const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/hei
 const fieldClass =
   "rounded border border-rule px-3 py-3 text-base text-ink dark:border-zinc-700 dark:bg-black dark:text-white";
 
-export function SubmitIssueForm({ onSuccess }: { onSuccess: () => void }) {
+export function SubmitIssueForm({
+  user,
+  onSuccess,
+}: {
+  user: User | null;
+  onSuccess: () => void;
+}) {
+  const { profile, loading: profileLoading, refresh: refreshProfile } = useProfile(user);
   const [category, setCategory] = useState<IssueCategory>(ISSUE_CATEGORIES[0]);
   const [description, setDescription] = useState("");
   const [locationSource, setLocationSource] = useState<LocationSource>(LOCATION_SOURCES[0]);
@@ -146,14 +157,51 @@ export function SubmitIssueForm({ onSuccess }: { onSuccess: () => void }) {
     onSuccess();
   }
 
+  if (!user) {
+    return (
+      <div className="px-6 py-6 sm:px-7 sm:py-7">
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink dark:text-white">
+          Sign in to post
+        </h1>
+        <div className="mt-6">
+          <SignInForm />
+        </div>
+      </div>
+    );
+  }
+
+  if (profileLoading) {
+    return <div className="px-6 py-6 sm:px-7 sm:py-7">Loading...</div>;
+  }
+
+  if (profile?.bannedAt) {
+    return (
+      <div className="px-6 py-6 sm:px-7 sm:py-7">
+        <p className="text-sm text-ink dark:text-white">
+          Your account has been suspended for repeated community guideline violations.
+        </p>
+      </div>
+    );
+  }
+
+  if (!profile?.username) {
+    return (
+      <div className="px-6 py-6 sm:px-7 sm:py-7">
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink dark:text-white">
+          Pick a username
+        </h1>
+        <div className="mt-6">
+          <UsernameOnboarding onDone={refreshProfile} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-6 py-6 sm:px-7 sm:py-7">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink dark:text-white">
         Report an issue
       </h1>
-      <p className="mt-1 font-mono text-xs tracking-wide text-zinc-500 uppercase">
-        No account needed · posts publicly
-      </p>
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
