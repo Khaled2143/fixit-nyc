@@ -41,6 +41,7 @@ export function IssueMap({
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
+  const [meTooedIds, setMeTooedIds] = useState<Set<string>>(new Set());
 
   const popupIssue = issues.find((issue) => issue.id === popupIssueId) ?? null;
 
@@ -55,6 +56,25 @@ export function IssueMap({
     }
 
     setReportedIds((prev) => new Set(prev).add(issueId));
+    onIssueChanged();
+  }
+
+  async function handleMeToo(issueId: string) {
+    setActionError(null);
+    setMeTooedIds((prev) => new Set(prev).add(issueId));
+    const response = await fetch(`/api/issues/${issueId}/me-too`, { method: "POST" });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setActionError(body.error ?? "Couldn't register your me too.");
+      setMeTooedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(issueId);
+        return next;
+      });
+      return;
+    }
+
     onIssueChanged();
   }
 
@@ -209,6 +229,20 @@ export function IssueMap({
                 {actionError && <p className="mt-2 text-sm text-signal">{actionError}</p>}
 
                 <div className="mt-3 flex gap-2">
+                  {user && !meTooedIds.has(popupIssue.id) && (
+                    <button
+                      type="button"
+                      onClick={() => handleMeToo(popupIssue.id)}
+                      className="rounded-full bg-civic px-3 py-1.5 text-xs font-semibold text-white"
+                    >
+                      Me too · {popupIssue.meTooCount}
+                    </button>
+                  )}
+                  {meTooedIds.has(popupIssue.id) && (
+                    <span className="text-xs font-mono text-zinc-500">
+                      Counted · {popupIssue.meTooCount}
+                    </span>
+                  )}
                   {user && !reportedIds.has(popupIssue.id) && (
                     <button
                       type="button"
