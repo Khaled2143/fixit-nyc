@@ -16,6 +16,7 @@ interface IssueRow {
   video_link: string | null;
   resolved_via: string | null;
   resolved_at: string | null;
+  me_too_count: number;
   created_at: string;
   user_id: string | null;
   hidden: boolean;
@@ -35,6 +36,7 @@ function mapRow(row: IssueRow): Issue {
     videoLink: row.video_link,
     resolvedVia: row.resolved_via,
     resolvedAt: row.resolved_at,
+    meTooCount: row.me_too_count,
     createdAt: row.created_at,
     userId: row.user_id,
     hidden: row.hidden,
@@ -109,5 +111,13 @@ export async function markIssueResolved(id: string): Promise<void> {
 
 export async function hideIssue(id: string): Promise<void> {
   const { error } = await supabaseAdmin.from("issues").update({ hidden: true }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function incrementMeTooCount(id: string, currentCount: number): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("issues")
+    .update({ me_too_count: currentCount + 1 })
+    .eq("id", id);
   if (error) throw error;
 }
