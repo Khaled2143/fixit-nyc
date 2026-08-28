@@ -55,6 +55,9 @@ export function IssueListCard({
             {issue.videoLink && <Video className="h-3.5 w-3.5" strokeWidth={1.9} />}
           </div>
         )}
+        {issue.meTooCount > 0 && (
+          <p className="mt-1 text-xs font-mono text-zinc-500 dark:text-zinc-400">{issue.meTooCount} me too</p>
+        )}
       </div>
     </button>
   );

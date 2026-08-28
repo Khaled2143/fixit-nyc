@@ -16,6 +16,7 @@ interface IssueRow {
   video_link: string | null;
   resolved_via: string | null;
   resolved_at: string | null;
+  me_too_count: number;
   created_at: string;
   user_id: string | null;
   hidden: boolean;
@@ -35,6 +36,7 @@ function mapRow(row: IssueRow): Issue {
     videoLink: row.video_link,
     resolvedVia: row.resolved_via,
     resolvedAt: row.resolved_at,
+    meTooCount: row.me_too_count,
     createdAt: row.created_at,
     userId: row.user_id,
     hidden: row.hidden,
@@ -109,5 +111,18 @@ export async function markIssueResolved(id: string): Promise<void> {
 
 export async function hideIssue(id: string): Promise<void> {
   const { error } = await supabaseAdmin.from("issues").update({ hidden: true }).eq("id", id);
+  if (error) throw error;
+}
+
+// If this update fails after insertMeToo already succeeded for the same
+// call, the me_toos row exists but the counter doesn't reflect it, and
+// that user's retries will no-op (unique constraint) rather than
+// re-incrementing. Recover with:
+//   update issues set me_too_count = (select count(*) from me_toos where issue_id = issues.id) where id = '<id>';
+export async function incrementMeTooCount(id: string, currentCount: number): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("issues")
+    .update({ me_too_count: currentCount + 1 })
+    .eq("id", id);
   if (error) throw error;
 }

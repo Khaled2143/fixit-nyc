@@ -27,6 +27,7 @@ export interface Issue {
   videoLink: string | null;
   resolvedVia: string | null;
   resolvedAt: string | null;
+  meTooCount: number;
   createdAt: string;
   userId: string | null;
   hidden: boolean;
