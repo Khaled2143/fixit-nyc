@@ -114,6 +114,11 @@ export async function hideIssue(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// If this update fails after insertMeToo already succeeded for the same
+// call, the me_toos row exists but the counter doesn't reflect it, and
+// that user's retries will no-op (unique constraint) rather than
+// re-incrementing. Recover with:
+//   update issues set me_too_count = (select count(*) from me_toos where issue_id = issues.id) where id = '<id>';
 export async function incrementMeTooCount(id: string, currentCount: number): Promise<void> {
   const { error } = await supabaseAdmin
     .from("issues")
