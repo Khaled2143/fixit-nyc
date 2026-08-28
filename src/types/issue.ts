@@ -26,6 +26,7 @@ export interface Issue {
   photoUrl: string | null;
   videoLink: string | null;
   resolvedVia: string | null;
+  resolvedAt: string | null;
   createdAt: string;
   userId: string | null;
   hidden: boolean;

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Map, Marker, Popup, type MapRef } from "react-map-gl/mapbox";
-import { X } from "lucide-react";
+import { Check, Clock, X } from "lucide-react";
 import type { Issue } from "@/types/issue";
 import { CATEGORY_STYLES, categoryColor } from "@/lib/categoryStyles";
 import { useColorScheme } from "@/lib/useColorScheme";
+import { daysBetween } from "@/lib/dates";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const NYC_CENTER = { latitude: 40.7128, longitude: -74.006, zoom: 11 };
@@ -161,7 +162,18 @@ export function IssueMap({
                 <p className="font-mono text-xs tracking-wide text-zinc-500 uppercase">
                   {popupIssue.category}
                 </p>
-                <p className="text-lg font-semibold text-ink">{popupIssue.description}</p>
+                {popupIssue.status === "resolved" && popupIssue.resolvedAt ? (
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-civic">
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    Resolved in {daysBetween(popupIssue.createdAt, popupIssue.resolvedAt)}d
+                  </p>
+                ) : (
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-zinc-500">
+                    <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    Open {daysBetween(popupIssue.createdAt, new Date().toISOString())}d
+                  </p>
+                )}
+                <p className="mt-1 text-lg font-semibold text-ink">{popupIssue.description}</p>
                 {popupIssue.address && (
                   <p className="mt-1 font-mono text-xs text-zinc-500">{popupIssue.address}</p>
                 )}
@@ -182,6 +194,16 @@ export function IssueMap({
                       className="max-h-56 w-full rounded object-contain"
                     />
                   </button>
+                )}
+                {popupIssue.videoLink && (
+                  <a
+                    href={popupIssue.videoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-sm font-medium text-civic underline"
+                  >
+                    Watch the video
+                  </a>
                 )}
 
                 {actionError && <p className="mt-2 text-sm text-signal">{actionError}</p>}

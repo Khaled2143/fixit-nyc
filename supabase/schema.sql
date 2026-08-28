@@ -113,3 +113,7 @@ begin
     execute format('drop policy if exists %I on storage.objects', pol.policyname);
   end loop;
 end $$;
+
+-- Lets the popup show "Resolved in Xd" instead of just a status label.
+-- Set by markIssueResolved when an issue flips to resolved; null until then.
+alter table issues add column resolved_at timestamptz;

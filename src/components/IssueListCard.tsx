@@ -1,5 +1,6 @@
 "use client";
 
+import { Camera, Video } from "lucide-react";
 import { CATEGORY_STYLES, categoryColor } from "@/lib/categoryStyles";
 import type { Issue } from "@/types/issue";
 
@@ -48,6 +49,12 @@ export function IssueListCard({
           {issue.category} · {statusText}
           {issue.address ? ` · ${issue.address}` : ""}
         </p>
+        {(issue.photoUrl || issue.videoLink) && (
+          <div className="mt-1 flex items-center gap-2 text-zinc-400 dark:text-zinc-500">
+            {issue.photoUrl && <Camera className="h-3.5 w-3.5" strokeWidth={1.9} />}
+            {issue.videoLink && <Video className="h-3.5 w-3.5" strokeWidth={1.9} />}
+          </div>
+        )}
       </div>
     </button>
   );
