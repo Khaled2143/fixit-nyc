@@ -117,3 +117,24 @@ end $$;
 -- Lets the popup show "Resolved in Xd" instead of just a status label.
 -- Set by markIssueResolved when an issue flips to resolved; null until then.
 alter table issues add column resolved_at timestamptz;
+
+-- Lets a resident signal "this is happening to me too" on an issue, once
+-- per account. Mirrors the reports table exactly: insert-only, deduped
+-- by a unique constraint, no RLS policies since only the service-role
+-- key (which bypasses RLS) ever touches it.
+create table me_toos (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references issues(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (issue_id, user_id)
+);
+
+alter table me_toos enable row level security;
+
+-- No policies: only the service-role key (which bypasses RLS) reads or
+-- writes this table.
+
+-- Denormalized counter so the list/map can show a count without a
+-- count(*) join on every render. Incremented by the me-too API route.
+alter table issues add column me_too_count integer not null default 0;
