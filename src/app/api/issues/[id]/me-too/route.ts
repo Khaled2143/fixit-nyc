@@ -15,7 +15,7 @@ export async function POST(
   const user = claimsData?.claims;
 
   if (!user) {
-    return NextResponse.json({ error: "You must be signed in to me too an issue." }, { status: 401 });
+    return NextResponse.json({ error: "You must be signed in to me-too an issue." }, { status: 401 });
   }
 
   const profile = await getProfile(user.sub);
