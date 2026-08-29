@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Map, Marker, Popup, type MapRef } from "react-map-gl/mapbox";
-import { Check, Clock, X } from "lucide-react";
+import { ArrowUp, Check, Clock, Flag, MapPin, X } from "lucide-react";
 import type { Issue } from "@/types/issue";
 import { CATEGORY_STYLES, categoryColor } from "@/lib/categoryStyles";
 import { useColorScheme } from "@/lib/useColorScheme";
@@ -190,25 +190,33 @@ export function IssueMap({
               closeOnClick={false}
               anchor="bottom"
               maxWidth="380px"
+              className="issue-popup"
             >
               <div>
-                <p className="font-mono text-xs tracking-wide text-zinc-500 uppercase">
-                  {popupIssue.category}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-civic/10 px-2.5 py-0.5 font-mono text-xs font-medium tracking-wide text-civic uppercase dark:bg-civic/20">
+                    {popupIssue.category}
+                  </span>
+                  {popupIssue.status === "resolved" && popupIssue.resolvedAt ? (
+                    <span className="flex items-center gap-1 text-xs font-medium text-civic">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Resolved in {daysBetween(popupIssue.createdAt, popupIssue.resolvedAt)}d
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      Open {daysBetween(popupIssue.createdAt, new Date().toISOString())}d
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-base font-semibold text-ink dark:text-white">
+                  {popupIssue.description}
                 </p>
-                {popupIssue.status === "resolved" && popupIssue.resolvedAt ? (
-                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-civic">
-                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Resolved in {daysBetween(popupIssue.createdAt, popupIssue.resolvedAt)}d
-                  </p>
-                ) : (
-                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-zinc-500">
-                    <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Open {daysBetween(popupIssue.createdAt, new Date().toISOString())}d
-                  </p>
-                )}
-                <p className="mt-1 text-lg font-semibold text-ink">{popupIssue.description}</p>
                 {popupIssue.address && (
-                  <p className="mt-1 font-mono text-xs text-zinc-500">{popupIssue.address}</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
+                    {popupIssue.address}
+                  </p>
                 )}
                 {popupIssue.photoUrl && (
                   <button
@@ -241,43 +249,52 @@ export function IssueMap({
 
                 {actionError && <p className="mt-2 text-sm text-signal">{actionError}</p>}
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-mono text-zinc-500">
-                    {meTooCounts[popupIssue.id] ?? popupIssue.meTooCount} me too
-                  </span>
-                  {user && !meTooedIds.has(popupIssue.id) && (
-                    <button
-                      type="button"
-                      onClick={() => handleMeToo(popupIssue.id)}
-                      className="rounded-full bg-civic px-3 py-1.5 text-xs font-semibold text-white"
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-3 dark:border-zinc-700">
+                  <button
+                    type="button"
+                    disabled={!user || meTooedIds.has(popupIssue.id)}
+                    onClick={() => handleMeToo(popupIssue.id)}
+                    className={
+                      meTooedIds.has(popupIssue.id)
+                        ? "flex items-center gap-1.5 rounded-full border border-civic/40 bg-civic/10 px-3 py-1.5 text-xs font-semibold text-civic"
+                        : "flex items-center gap-1.5 rounded-full border border-zinc-400/70 px-3 py-1.5 text-xs font-semibold text-ink disabled:cursor-default disabled:opacity-70 dark:border-zinc-600 dark:text-white"
+                    }
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    Same issue
+                    <span
+                      className={
+                        meTooedIds.has(popupIssue.id) ? "text-civic" : "text-zinc-500 dark:text-zinc-400"
+                      }
                     >
-                      Me too
-                    </button>
-                  )}
-                  {meTooedIds.has(popupIssue.id) && (
-                    <span className="text-xs font-mono text-zinc-500">Counted</span>
-                  )}
-                  {user && !reportedIds.has(popupIssue.id) && (
-                    <button
-                      type="button"
-                      onClick={() => handleReport(popupIssue.id)}
-                      className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      Report
-                    </button>
-                  )}
-                  {reportedIds.has(popupIssue.id) && (
-                    <span className="text-xs font-mono text-zinc-500">Reported</span>
-                  )}
-                  {user && user.id === popupIssue.userId && popupIssue.status !== "resolved" && (
-                    <button
-                      type="button"
-                      onClick={() => handleResolve(popupIssue.id)}
-                      className="rounded-full bg-civic px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      Mark resolved
-                    </button>
-                  )}
+                      {meTooCounts[popupIssue.id] ?? popupIssue.meTooCount}
+                    </span>
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    {user && user.id === popupIssue.userId && popupIssue.status !== "resolved" && (
+                      <button
+                        type="button"
+                        onClick={() => handleResolve(popupIssue.id)}
+                        className="rounded-full bg-civic px-3 py-1.5 text-xs font-semibold text-white"
+                      >
+                        Mark resolved
+                      </button>
+                    )}
+                    {user && !reportedIds.has(popupIssue.id) && (
+                      <button
+                        type="button"
+                        onClick={() => handleReport(popupIssue.id)}
+                        className="flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                      >
+                        <Flag className="h-3.5 w-3.5" strokeWidth={2} />
+                        Report
+                      </button>
+                    )}
+                    {reportedIds.has(popupIssue.id) && (
+                      <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">Reported</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </Popup>
