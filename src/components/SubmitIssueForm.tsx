@@ -18,7 +18,7 @@ const LOCATION_METHODS: { value: LocationSource; label: string }[] = [
   { value: "latlong", label: "Lat/Long" },
 ];
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 const fieldClass =
@@ -58,7 +58,7 @@ export function SubmitIssueForm({
     }
 
     if (file.size > MAX_PHOTO_BYTES) {
-      setError("Photo must be under 5MB.");
+      setError("Photo must be under 10MB.");
       e.target.value = "";
       return;
     }

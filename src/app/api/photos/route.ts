@@ -6,7 +6,7 @@ import { isPhotoSafe } from "@/lib/photoModeration";
 import { getProfile } from "@/lib/profiles";
 
 const PHOTO_BUCKET = "issue-photos";
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 export async function POST(request: Request) {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   if (file.size > MAX_PHOTO_BYTES) {
-    return NextResponse.json({ error: "Photo must be under 5MB." }, { status: 400 });
+    return NextResponse.json({ error: "Photo must be under 10MB." }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
