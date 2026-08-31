@@ -105,6 +105,22 @@ export function IssueMap({
     onIssueChanged();
   }
 
+  async function handleDelete(issueId: string) {
+    if (!window.confirm("Delete this report? This can't be undone.")) return;
+
+    setActionError(null);
+    const response = await fetch(`/api/issues/${issueId}/delete`, { method: "DELETE" });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setActionError(body.error ?? "Couldn't delete this issue.");
+      return;
+    }
+
+    onPopupClose();
+    onIssueChanged();
+  }
+
   useEffect(() => {
     if (!lightboxPhoto) return;
 
@@ -272,6 +288,15 @@ export function IssueMap({
                   </button>
 
                   <div className="flex items-center gap-3">
+                    {user && user.id === popupIssue.userId && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(popupIssue.id)}
+                        className="text-xs font-medium text-signal hover:underline"
+                      >
+                        Delete
+                      </button>
+                    )}
                     {user && user.id === popupIssue.userId && popupIssue.status !== "resolved" && (
                       <button
                         type="button"
