@@ -322,7 +322,6 @@ export function SubmitIssueForm({
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handlePhotoChange}
               className={fieldClass}
             />
