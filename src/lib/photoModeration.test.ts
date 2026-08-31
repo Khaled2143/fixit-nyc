@@ -37,4 +37,18 @@ describe("isPhotoSafe", () => {
     ]);
     expect(await isPhotoSafe(Buffer.from("fake"))).toBe(false);
   });
+
+  it("returns false when racy content is merely possible", async () => {
+    safeSearchDetection.mockResolvedValue([
+      { safeSearchAnnotation: { adult: "VERY_UNLIKELY", violence: "UNLIKELY", racy: "POSSIBLE" } },
+    ]);
+    expect(await isPhotoSafe(Buffer.from("fake"))).toBe(false);
+  });
+
+  it("returns true when adult content is merely possible", async () => {
+    safeSearchDetection.mockResolvedValue([
+      { safeSearchAnnotation: { adult: "POSSIBLE", violence: "UNLIKELY", racy: "UNLIKELY" } },
+    ]);
+    expect(await isPhotoSafe(Buffer.from("fake"))).toBe(true);
+  });
 });
